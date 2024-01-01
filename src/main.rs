@@ -10,6 +10,7 @@ use std::process;
 use std::time::Duration;
 use url::Url;
 
+use monolith::cookies::parse_cookies;
 use monolith::html::{
     add_favicon, create_metadata_tag, get_base_url, get_charset, has_favicon, html_to_dom,
     serialize_document, set_base_url, set_charset, walk_and_embed_assets,
@@ -64,7 +65,7 @@ pub fn read_stdin() -> Vec<u8> {
 }
 
 fn main() {
-    let options = Options::from_args();
+    let mut options = Options::from_args();
 
     // Check if target was provided
     if options.target.len() == 0 {
@@ -79,6 +80,24 @@ fn main() {
         if !Encoding::for_label_no_replacement(custom_charset.as_bytes()).is_some() {
             eprintln!("Unknown encoding: {}", &custom_charset);
             process::exit(1);
+        }
+    }
+
+    if let Some(ref path) = options.cookie_file {
+        match std::fs::read_to_string(path) {
+            Ok(ref contents) => match parse_cookies(contents) {
+                Ok(cookies) => {
+                    options.__cookies = cookies;
+                }
+                Err(_) => {
+                    eprintln!("Could not parse specified cookie file");
+                    process::exit(1);
+                }
+            },
+            Err(_) => {
+                eprintln!("Could not read specified cookie file");
+                process::exit(1);
+            }
         }
     }
 

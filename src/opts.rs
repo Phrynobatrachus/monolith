@@ -1,3 +1,4 @@
+use crate::cookies::Cookie;
 use clap::{App, Arg, ArgAction};
 use std::env;
 
@@ -16,6 +17,8 @@ pub struct Options {
     pub isolate: bool,
     pub no_js: bool,
     pub insecure: bool,
+    pub cookie_file: Option<String>,
+    pub __cookies: Vec<Cookie>,
     pub no_metadata: bool,
     pub output: String,
     pub silent: bool,
@@ -71,6 +74,7 @@ impl Options {
             .args_from_usage("-I, --isolate 'Cuts off document from the Internet'")
             .args_from_usage("-j, --no-js 'Removes JavaScript'")
             .args_from_usage("-k, --insecure 'Allows invalid X.509 (TLS) certificates'")
+            .args_from_usage("-L, --load-cookies=[cookies.txt] 'Sets cookies for requests'")
             .args_from_usage("-M, --no-metadata 'Excludes timestamp and source information'")
             .args_from_usage(
                 "-n, --unwrap-noscript 'Replaces NOSCRIPT elements with their contents'",
@@ -118,6 +122,7 @@ impl Options {
         options.no_js = app.is_present("no-js");
         options.insecure = app.is_present("insecure");
         options.no_metadata = app.is_present("no-metadata");
+        options.cookie_file = app.value_of("load-cookies").map(|s| s.to_string());
         options.output = app.value_of("output").unwrap_or("").to_string();
         options.silent = app.is_present("silent");
         options.timeout = app

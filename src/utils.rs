@@ -1,5 +1,5 @@
 use reqwest::blocking::Client;
-use reqwest::header::CONTENT_TYPE;
+use reqwest::header::{CONTENT_TYPE, COOKIE};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -304,7 +304,18 @@ pub fn retrieve_asset(
             }
 
             // URL not in cache, we retrieve the file
-            match client.get(url.as_str()).send() {
+            let mut request = client.get(url.as_str());
+            if options.cookie_file.is_some() {
+                if let Some(cookie) = options
+                    .__cookies
+                    .iter()
+                    .find(|c| !c.is_expired() && c.matches_url(url.as_str()))
+                {
+                    request = request.header(COOKIE, cookie.encoded());
+                }
+            }
+
+            match request.send() {
                 Ok(response) => {
                     if !options.ignore_errors && response.status() != reqwest::StatusCode::OK {
                         if !options.silent {
