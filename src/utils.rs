@@ -201,7 +201,6 @@ pub fn retrieve_asset(
 ) -> Result<(Vec<u8>, Url, String, String), reqwest::Error> {
     let client = CLIENT.get_or_init(|| {
         let mut header_map = HeaderMap::new();
-        let options = OPTIONS.get().expect("Options not initialized");
         if let Some(ref user_agent) = options.user_agent {
             header_map.insert(
                 USER_AGENT,

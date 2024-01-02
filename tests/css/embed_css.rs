@@ -35,9 +35,11 @@ mod passing {
     #[test]
     fn style_exclude_unquoted_images() {
         let document_url: Url = Url::parse("https://doesntmatter.local/").unwrap();
-        let mut options = Options::default();
-        options.no_images = true;
-        options.silent = true;
+        let options = Options {
+            no_images: true,
+            silent: true,
+            ..Default::default()
+        };
 
         const STYLE: &str = "/* border: none;*/\
             background-image: url(https://somewhere.com/bg.png); \
@@ -65,9 +67,11 @@ mod passing {
     #[test]
     fn style_exclude_single_quoted_images() {
         let document_url: Url = Url::parse("data:,").unwrap();
-        let mut options = Options::default();
-        options.no_images = true;
-        options.silent = true;
+        let options = Options {
+            no_images: true,
+            silent: true,
+            ..Default::default()
+        };
 
         const STYLE: &str = "/* border: none;*/\
             background-image: url('https://somewhere.com/bg.png'); \
@@ -95,8 +99,10 @@ mod passing {
     #[test]
     fn style_block() {
         let document_url: Url = Url::parse("file:///").unwrap();
-        let mut options = Options::default();
-        options.silent = true;
+        let options = Options {
+            silent: true,
+            ..Default::default()
+        };
 
         const CSS: &str = "\
             #id.class-name:not(:nth-child(3n+0)) {\n  \
@@ -112,8 +118,10 @@ mod passing {
     #[test]
     fn attribute_selectors() {
         let document_url: Url = Url::parse("https://doesntmatter.local/").unwrap();
-        let mut options = Options::default();
-        options.silent = true;
+        let options = Options {
+            silent: true,
+            ..Default::default()
+        };
 
         const CSS: &str = "\
             [data-value] {
@@ -151,8 +159,10 @@ mod passing {
     #[test]
     fn import_string() {
         let document_url: Url = Url::parse("https://doesntmatter.local/").unwrap();
-        let mut options = Options::default();
-        options.silent = true;
+        let options = Options {
+            silent: true,
+            ..Default::default()
+        };
 
         const CSS: &str = "\
             @charset 'UTF-8';\n\
@@ -177,8 +187,10 @@ mod passing {
     #[test]
     fn hash_urls() {
         let document_url: Url = Url::parse("https://doesntmatter.local/").unwrap();
-        let mut options = Options::default();
-        options.silent = true;
+        let options = Options {
+            silent: true,
+            ..Default::default()
+        };
 
         const CSS: &str = "\
             body {\n    \
@@ -196,8 +208,10 @@ mod passing {
     #[test]
     fn transform_percentages_and_degrees() {
         let document_url: Url = Url::parse("https://doesntmatter.local/").unwrap();
-        let mut options = Options::default();
-        options.silent = true;
+        let options = Options {
+            silent: true,
+            ..Default::default()
+        };
 
         const CSS: &str = "\
             div {\n    \
@@ -213,8 +227,10 @@ mod passing {
     #[test]
     fn unusual_indents() {
         let document_url: Url = Url::parse("https://doesntmatter.local/").unwrap();
-        let mut options = Options::default();
-        options.silent = true;
+        let options = Options {
+            silent: true,
+            ..Default::default()
+        };
 
         const CSS: &str = "\
             .is\\:good:hover {\n    \
@@ -232,9 +248,11 @@ mod passing {
     #[test]
     fn exclude_fonts() {
         let document_url: Url = Url::parse("https://doesntmatter.local/").unwrap();
-        let mut options = Options::default();
-        options.no_fonts = true;
-        options.silent = true;
+        let options = Options {
+            no_fonts: true,
+            silent: true,
+            ..Default::default()
+        };
 
         const CSS: &str = "\
             @font-face {\n    \
@@ -275,8 +293,10 @@ mod passing {
     #[test]
     fn content() {
         let document_url: Url = Url::parse("data:,").unwrap();
-        let mut options = Options::default();
-        options.silent = true;
+        let options = Options {
+            silent: true,
+            ..Default::default()
+        };
 
         const CSS: &str = "\
             #language a[href=\"#translations\"]:before {\n\
@@ -295,8 +315,10 @@ mod passing {
     #[test]
     fn ie_css_hack() {
         let document_url: Url = Url::parse("data:,").unwrap();
-        let mut options = Options::default();
-        options.silent = true;
+        let options = Options {
+            silent: true,
+            ..Default::default()
+        };
 
         const CSS: &str = "\
             div#p>svg>foreignObject>section:not(\\9) {\n\

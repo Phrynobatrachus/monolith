@@ -16,8 +16,10 @@ mod passing {
 
     #[test]
     fn read_data_url() {
-        let mut options = Options::default();
-        options.silent = true;
+        let options = Options {
+            silent: true,
+            ..Default::default()
+        };
 
         // If both source and target are data URLs,
         //  ensure the result contains target data URL
@@ -42,8 +44,10 @@ mod passing {
 
     #[test]
     fn read_local_file_with_file_url_parent() {
-        let mut options = Options::default();
-        options.silent = true;
+        let options = Options {
+            silent: true,
+            ..Default::default()
+        };
 
         let file_url_protocol: &str = if cfg!(windows) { "file:///" } else { "file://" };
 
@@ -97,43 +101,37 @@ mod failing {
 
     #[test]
     fn read_local_file_with_data_url_parent() {
-        let mut options = Options::default();
-        options.silent = true;
+        let options = Options {
+            silent: true,
+            ..Default::default()
+        };
 
         // Inclusion of local assets from data URL sources should not be allowed
-        match utils::retrieve_asset(
+        if let Ok((..)) = utils::retrieve_asset(
             &Url::parse("data:text/html;base64,SoUrCe").unwrap(),
             &Url::parse("file:///etc/passwd").unwrap(),
             &options,
             0,
         ) {
-            Ok((..)) => {
-                assert!(false);
-            }
-            Err(_) => {
-                assert!(true);
-            }
+            panic!();
         }
     }
 
     #[test]
     fn read_local_file_with_https_parent() {
-        let mut options = Options::default();
-        options.silent = true;
+        let options = Options {
+            silent: true,
+            ..Default::default()
+        };
 
         // Inclusion of local assets from remote sources should not be allowed
-        match utils::retrieve_asset(
+        if let Ok((..)) = utils::retrieve_asset(
             &Url::parse("https://kernel.org/").unwrap(),
             &Url::parse("file:///etc/passwd").unwrap(),
             &options,
             0,
         ) {
-            Ok((..)) => {
-                assert!(false);
-            }
-            Err(_) => {
-                assert!(true);
-            }
+            panic!();
         }
     }
 }

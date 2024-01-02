@@ -13,7 +13,7 @@ mod passing {
     #[test]
     fn div_as_root_element() {
         let html = "<div><script src=\"some.js\"></script></div>";
-        let dom = html::html_to_dom(&html.as_bytes().to_vec(), "".to_string());
+        let dom = html::html_to_dom(html.as_bytes(), "".to_string());
         let options = Options::default();
 
         assert_eq!(
@@ -28,9 +28,11 @@ mod passing {
                     <link rel=\"something\" href=\"some.css\" />\
                     <meta http-equiv=\"Content-Security-Policy\" content=\"default-src https:\">\
                     <div><script src=\"some.js\"></script></div>";
-        let dom = html::html_to_dom(&html.as_bytes().to_vec(), "".to_string());
-        let mut options = Options::default();
-        options.isolate = true;
+        let dom = html::html_to_dom(html.as_bytes(), "".to_string());
+        let options = Options {
+            isolate: true,
+            ..Default::default()
+        };
 
         assert_eq!(
             String::from_utf8_lossy(&html::serialize_document(
@@ -60,9 +62,11 @@ mod passing {
                     <title>Unstyled document</title>\
                     <link rel=\"stylesheet\" href=\"main.css\"/>\
                     <div style=\"display: none;\"></div>";
-        let dom = html::html_to_dom(&html.as_bytes().to_vec(), "".to_string());
-        let mut options = Options::default();
-        options.no_css = true;
+        let dom = html::html_to_dom(html.as_bytes(), "".to_string());
+        let options = Options {
+            no_css: true,
+            ..Default::default()
+        };
 
         assert_eq!(
             String::from_utf8_lossy(&html::serialize_document(dom, "".to_string(), &options)),
@@ -84,9 +88,11 @@ mod passing {
                     <title>Frameless document</title>\
                     <link rel=\"something\"/>\
                     <div><script src=\"some.js\"></script></div>";
-        let dom = html::html_to_dom(&html.as_bytes().to_vec(), "".to_string());
-        let mut options = Options::default();
-        options.no_frames = true;
+        let dom = html::html_to_dom(html.as_bytes(), "".to_string());
+        let options = Options {
+            no_frames: true,
+            ..Default::default()
+        };
 
         assert_eq!(
             String::from_utf8_lossy(&html::serialize_document(
@@ -117,14 +123,16 @@ mod passing {
                         <img style=\"width: 100%;\" src=\"some.png\" />\
                         <iframe src=\"some.html\"></iframe>\
                     </div>";
-        let dom = html::html_to_dom(&html.as_bytes().to_vec(), "".to_string());
-        let mut options = Options::default();
-        options.isolate = true;
-        options.no_css = true;
-        options.no_fonts = true;
-        options.no_frames = true;
-        options.no_js = true;
-        options.no_images = true;
+        let dom = html::html_to_dom(html.as_bytes(), "".to_string());
+        let options = Options {
+            isolate: true,
+            no_css: true,
+            no_fonts: true,
+            no_frames: true,
+            no_js: true,
+            no_images: true,
+            ..Default::default()
+        };
 
         assert_eq!(
             String::from_utf8_lossy(&html::serialize_document(

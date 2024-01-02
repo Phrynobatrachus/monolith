@@ -12,8 +12,10 @@ mod passing {
 
     #[test]
     fn isolated() {
-        let mut options = Options::default();
-        options.isolate = true;
+        let options = Options {
+            isolate: true,
+            ..Default::default()
+        };
         let csp_content = html::compose_csp(&options);
 
         assert_eq!(
@@ -24,8 +26,10 @@ mod passing {
 
     #[test]
     fn no_css() {
-        let mut options = Options::default();
-        options.no_css = true;
+        let options = Options {
+            no_css: true,
+            ..Default::default()
+        };
         let csp_content = html::compose_csp(&options);
 
         assert_eq!(csp_content, "style-src 'none';");
@@ -33,8 +37,10 @@ mod passing {
 
     #[test]
     fn no_fonts() {
-        let mut options = Options::default();
-        options.no_fonts = true;
+        let options = Options {
+            no_fonts: true,
+            ..Default::default()
+        };
         let csp_content = html::compose_csp(&options);
 
         assert_eq!(csp_content, "font-src 'none';");
@@ -42,8 +48,10 @@ mod passing {
 
     #[test]
     fn no_frames() {
-        let mut options = Options::default();
-        options.no_frames = true;
+        let options = Options {
+            no_frames: true,
+            ..Default::default()
+        };
         let csp_content = html::compose_csp(&options);
 
         assert_eq!(csp_content, "frame-src 'none'; child-src 'none';");
@@ -51,8 +59,10 @@ mod passing {
 
     #[test]
     fn no_js() {
-        let mut options = Options::default();
-        options.no_js = true;
+        let options = Options {
+            no_js: true,
+            ..Default::default()
+        };
         let csp_content = html::compose_csp(&options);
 
         assert_eq!(csp_content, "script-src 'none';");
@@ -60,8 +70,10 @@ mod passing {
 
     #[test]
     fn no_images() {
-        let mut options = Options::default();
-        options.no_images = true;
+        let options = Options {
+            no_images: true,
+            ..Default::default()
+        };
         let csp_content = html::compose_csp(&options);
 
         assert_eq!(csp_content, "img-src data:;");
@@ -69,13 +81,15 @@ mod passing {
 
     #[test]
     fn all() {
-        let mut options = Options::default();
-        options.isolate = true;
-        options.no_css = true;
-        options.no_fonts = true;
-        options.no_frames = true;
-        options.no_js = true;
-        options.no_images = true;
+        let options = Options {
+            isolate: true,
+            no_css: true,
+            no_fonts: true,
+            no_frames: true,
+            no_js: true,
+            no_images: true,
+            ..Default::default()
+        };
         let csp_content = html::compose_csp(&options);
 
         assert_eq!(csp_content, "default-src 'unsafe-eval' 'unsafe-inline' data:; style-src 'none'; font-src 'none'; frame-src 'none'; child-src 'none'; script-src 'none'; img-src data:;");

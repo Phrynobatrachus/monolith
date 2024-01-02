@@ -19,7 +19,7 @@ mod passing {
     <body>
     </body>
 </html>";
-        let dom = html::html_to_dom(&html.as_bytes().to_vec(), "".to_string());
+        let dom = html::html_to_dom(html.as_bytes(), "".to_string());
 
         assert_eq!(html::get_charset(&dom.document), Some("GB2312".to_string()));
     }
@@ -34,7 +34,7 @@ mod passing {
     <body>
     </body>
 </html>";
-        let dom = html::html_to_dom(&html.as_bytes().to_vec(), "".to_string());
+        let dom = html::html_to_dom(html.as_bytes(), "".to_string());
 
         assert_eq!(html::get_charset(&dom.document), Some("GB2312".to_string()));
     }
@@ -50,7 +50,7 @@ mod passing {
     <body>
     </body>
 </html>";
-        let dom = html::html_to_dom(&html.as_bytes().to_vec(), "".to_string());
+        let dom = html::html_to_dom(html.as_bytes(), "".to_string());
 
         assert_eq!(html::get_charset(&dom.document), Some("utf-8".to_string()));
     }
@@ -65,7 +65,7 @@ mod passing {
     <body>
     </body>
 </html>";
-        let dom = html::html_to_dom(&html.as_bytes().to_vec(), "".to_string());
+        let dom = html::html_to_dom(html.as_bytes(), "".to_string());
 
         assert_eq!(html::get_charset(&dom.document), Some("GB2312".to_string()));
     }
