@@ -256,22 +256,18 @@ pub fn find_meta_charset_or_content_type_node(node: &Handle) -> Option<Handle> {
             }
         }
         NodeData::Element { ref name, .. } => {
-            match name.local.as_ref() {
-                "head" => {
-                    if let Some(meta_node) = get_child_node_by_name(node, "meta") {
-                        if get_node_attr(&meta_node, "charset").is_some() {
+            if let "head" = name.local.as_ref() {
+                if let Some(meta_node) = get_child_node_by_name(node, "meta") {
+                    if get_node_attr(&meta_node, "charset").is_some() {
+                        return Some(meta_node);
+                    } else if let Some(meta_node_http_equiv_attr_value) =
+                        get_node_attr(&meta_node, "http-equiv")
+                    {
+                        if meta_node_http_equiv_attr_value.eq_ignore_ascii_case("content-type") {
                             return Some(meta_node);
-                        } else if let Some(meta_node_http_equiv_attr_value) =
-                            get_node_attr(&meta_node, "http-equiv")
-                        {
-                            if meta_node_http_equiv_attr_value.eq_ignore_ascii_case("content-type")
-                            {
-                                return Some(meta_node);
-                            }
                         }
                     }
                 }
-                _ => {}
             }
 
             // Dig deeper
@@ -362,15 +358,12 @@ pub fn has_favicon(handle: &Handle) -> bool {
             }
         }
         NodeData::Element { ref name, .. } => {
-            match name.local.as_ref() {
-                "link" => {
-                    if let Some(attr_value) = get_node_attr(handle, "rel") {
-                        if is_icon(attr_value.trim()) {
-                            found_favicon = true;
-                        }
+            if let "link" = name.local.as_ref() {
+                if let Some(attr_value) = get_node_attr(handle, "rel") {
+                    if is_icon(attr_value.trim()) {
+                        found_favicon = true;
                     }
                 }
-                _ => {}
             }
 
             if !found_favicon {
@@ -477,42 +470,39 @@ pub fn set_charset(mut dom: RcDom, desired_charset: String) -> RcDom {
 }
 
 pub fn set_node_attr(node: &Handle, attr_name: &str, attr_value: Option<String>) {
-    match &node.data {
-        NodeData::Element { ref attrs, .. } => {
-            let attrs_mut = &mut attrs.borrow_mut();
-            let mut i = 0;
-            let mut found_existing_attr: bool = false;
+    if let NodeData::Element { ref attrs, .. } = &node.data {
+        let attrs_mut = &mut attrs.borrow_mut();
+        let mut i = 0;
+        let mut found_existing_attr: bool = false;
 
-            while i < attrs_mut.len() {
-                if &attrs_mut[i].name.local == attr_name {
-                    found_existing_attr = true;
+        while i < attrs_mut.len() {
+            if &attrs_mut[i].name.local == attr_name {
+                found_existing_attr = true;
 
-                    if let Some(attr_value) = attr_value.clone() {
-                        let _ = &attrs_mut[i].value.clear();
-                        let _ = &attrs_mut[i].value.push_slice(attr_value.as_str());
-                    } else {
-                        // Remove attr completely if attr_value is not defined
-                        attrs_mut.remove(i);
-                        continue;
-                    }
+                if let Some(attr_value) = attr_value.clone() {
+                    let _ = &attrs_mut[i].value.clear();
+                    let _ = &attrs_mut[i].value.push_slice(attr_value.as_str());
+                } else {
+                    // Remove attr completely if attr_value is not defined
+                    attrs_mut.remove(i);
+                    continue;
                 }
-
-                i += 1;
             }
 
-            if !found_existing_attr {
-                // Add new attribute (since originally the target node didn't have it)
-                if let Some(attr_value) = attr_value {
-                    let name = LocalName::from(attr_name);
+            i += 1;
+        }
 
-                    attrs_mut.push(Attribute {
-                        name: QualName::new(None, ns!(), name),
-                        value: format_tendril!("{}", attr_value),
-                    });
-                }
+        if !found_existing_attr {
+            // Add new attribute (since originally the target node didn't have it)
+            if let Some(attr_value) = attr_value {
+                let name = LocalName::from(attr_name);
+
+                attrs_mut.push(Attribute {
+                    name: QualName::new(None, ns!(), name),
+                    value: format_tendril!("{}", attr_value),
+                });
             }
         }
-        _ => {}
     };
 }
 
@@ -1085,42 +1075,37 @@ pub fn walk_and_embed_assets(document_url: &Url, node: &Handle, options: &Option
                 }
                 "noscript" => {
                     for child_node in node.children.borrow_mut().iter_mut() {
-                        match child_node.data {
-                            NodeData::Text { ref contents } => {
-                                // Get contents of NOSCRIPT node
-                                let mut noscript_contents = contents.borrow_mut();
-                                // Parse contents of NOSCRIPT node as DOM
-                                let noscript_contents_dom: RcDom = html_to_dom(
-                                    &noscript_contents.as_bytes().to_vec(),
-                                    "".to_string(),
-                                );
-                                // Embed assets of NOSCRIPT node contents
-                                walk_and_embed_assets(
-                                    document_url,
-                                    &noscript_contents_dom.document,
-                                    options,
-                                    depth,
-                                );
-                                // Get rid of original contents
-                                noscript_contents.clear();
-                                // Insert HTML containing embedded assets into NOSCRIPT node
-                                if let Some(html) =
-                                    get_child_node_by_name(&noscript_contents_dom.document, "html")
-                                {
-                                    if let Some(body) = get_child_node_by_name(&html, "body") {
-                                        let mut buf: Vec<u8> = Vec::new();
-                                        serialize(
-                                            &mut buf,
-                                            &SerializableHandle::from(body),
-                                            SerializeOpts::default(),
-                                        )
-                                        .expect("Unable to serialize DOM into buffer");
-                                        let result = String::from_utf8_lossy(&buf);
-                                        noscript_contents.push_slice(&result);
-                                    }
+                        if let NodeData::Text { ref contents } = child_node.data {
+                            // Get contents of NOSCRIPT node
+                            let mut noscript_contents = contents.borrow_mut();
+                            // Parse contents of NOSCRIPT node as DOM
+                            let noscript_contents_dom: RcDom =
+                                html_to_dom(noscript_contents.as_bytes(), "".to_string());
+                            // Embed assets of NOSCRIPT node contents
+                            walk_and_embed_assets(
+                                document_url,
+                                &noscript_contents_dom.document,
+                                options,
+                                depth,
+                            );
+                            // Get rid of original contents
+                            noscript_contents.clear();
+                            // Insert HTML containing embedded assets into NOSCRIPT node
+                            if let Some(html) =
+                                get_child_node_by_name(&noscript_contents_dom.document, "html")
+                            {
+                                if let Some(body) = get_child_node_by_name(&html, "body") {
+                                    let mut buf: Vec<u8> = Vec::new();
+                                    serialize(
+                                        &mut buf,
+                                        &SerializableHandle::from(body),
+                                        SerializeOpts::default(),
+                                    )
+                                    .expect("Unable to serialize DOM into buffer");
+                                    let result = String::from_utf8_lossy(&buf);
+                                    noscript_contents.push_slice(&result);
                                 }
                             }
-                            _ => {}
                         }
                     }
                 }

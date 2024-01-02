@@ -154,7 +154,7 @@ fn main() {
     };
 
     // At first we assume that base URL is the same as target URL
-    let mut base_url: Url = target_url.clone();
+    let mut base_url: Url = Clone::clone(&target_url);
 
     let data: Vec<u8>;
     let mut document_encoding: String = "".to_string();
@@ -167,7 +167,7 @@ fn main() {
         || (target_url.scheme() == "http" || target_url.scheme() == "https")
         || target_url.scheme() == "data"
     {
-        match retrieve_asset(&target_url, &target_url, &options, 0) {
+        match retrieve_asset(&target_url, &target_url, options, 0) {
             Ok((retrieved_data, final_url, media_type, charset)) => {
                 // Provide output as text without processing it, the way browsers do
                 if !media_type.eq_ignore_ascii_case("text/html")
@@ -275,7 +275,7 @@ fn main() {
     }
 
     // Traverse through the document and embed remote assets
-    walk_and_embed_assets(&base_url, &dom.document, &options, 0);
+    walk_and_embed_assets(&base_url, &dom.document, options, 0);
 
     // Update or add new BASE element to reroute network requests and hash-links
     if let Some(new_base_url) = options.base_url.clone() {
@@ -289,7 +289,7 @@ fn main() {
     {
         let favicon_ico_url: Url = resolve_url(&base_url, "/favicon.ico");
 
-        match retrieve_asset(&target_url, &favicon_ico_url, &options, 0) {
+        match retrieve_asset(&target_url, &favicon_ico_url, options, 0) {
             Ok((data, final_url, media_type, charset)) => {
                 let favicon_data_url: Url =
                     create_data_url(&media_type, &charset, &data, &final_url);
@@ -308,7 +308,7 @@ fn main() {
     }
 
     // Serialize DOM tree
-    let mut result: Vec<u8> = serialize_document(dom, document_encoding, &options);
+    let mut result: Vec<u8> = serialize_document(dom, document_encoding, options);
 
     // Prepend metadata comment tag
     if !options.no_metadata {
