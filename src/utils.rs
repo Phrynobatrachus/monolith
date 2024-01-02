@@ -328,7 +328,7 @@ pub fn retrieve_asset(
                     .find(|c| !c.is_expired() && c.matches_url(url.as_str()))
                 {
                     println!("matching cookie: {:?}", matching_cookie.encoded());
-                    request = request.header(COOKIE, matching_cookie.encoded())
+                    request = request.header(COOKIE, matching_cookie.encoded());
                 }
             }
 

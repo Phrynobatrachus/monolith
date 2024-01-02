@@ -94,7 +94,8 @@ impl Options {
                     .help("URL or file path, use - for STDIN"),
             )
             .get_matches();
-        let mut options: Options = Options::default();
+        let options = Options::default();
+        let mut options: Options = options;
 
         // Process the command
         options.target = app

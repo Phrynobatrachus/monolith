@@ -1,3 +1,4 @@
+use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use std::{
     sync::OnceLock,
     time::{SystemTime, UNIX_EPOCH},
@@ -5,6 +6,7 @@ use std::{
 use url::Url;
 
 pub static COOKIES: OnceLock<Vec<Cookie>> = OnceLock::new();
+
 #[derive(Debug)]
 pub struct Cookie {
     pub domain: String,
@@ -15,12 +17,17 @@ pub struct Cookie {
     pub name: String,
     pub value: String,
 }
+
 pub struct ParseCookieError {}
+
+const FRAGMENT: &AsciiSet = &NON_ALPHANUMERIC.remove(b'_');
 
 impl Cookie {
     pub fn encoded(&self) -> String {
-        let dummy_url = format!("https://example.com/?{}={}", self.name, self.value);
-        Url::parse(&dummy_url).unwrap().query().unwrap().to_owned()
+        let name = utf8_percent_encode(&self.name, FRAGMENT).to_string();
+        let value = utf8_percent_encode(&self.value, FRAGMENT).to_string();
+
+        format!("{}={}", name, value)
     }
 
     pub fn is_expired(&self) -> bool {
@@ -76,7 +83,7 @@ pub fn parse_cookies(file_contents: &str) -> Result<Vec<Cookie>, ParseCookieErro
 
                 let name = cookie_parts[5].to_string();
                 let mut value = cookie_parts[6].to_string();
-                // drop quotes
+                // drop extra quotes
                 value.remove(0);
                 value.remove(value.len() - 1);
 
