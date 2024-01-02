@@ -30,7 +30,6 @@ cssparser = "0.31.2"
 encoding_rs = "0.8.32"
 html5ever = "0.26.0"
 markup5ever_rcdom = "0.2.0"
-once_cell = "*"
 percent-encoding = "2.3.0"
 sha2 = "0.10.6" # Used for calculating checksums during integrity checks
 url = "2.4.0"

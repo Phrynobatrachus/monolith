@@ -1,9 +1,7 @@
-use crate::cookies::Cookie;
 use clap::{App, Arg, ArgAction};
-use once_cell::sync::Lazy;
-use std::env;
+use std::{env, sync::OnceLock};
 
-pub static OPTIONS: Lazy<Options> = Lazy::new(Options::from_args);
+pub static OPTIONS: OnceLock<Options> = OnceLock::new();
 
 #[derive(Default)]
 pub struct Options {
@@ -20,8 +18,7 @@ pub struct Options {
     pub isolate: bool,
     pub no_js: bool,
     pub insecure: bool,
-    pub cookie_file: Option<String>,
-    pub __cookies: Vec<Cookie>,
+    pub load_cookies: Option<String>,
     pub no_metadata: bool,
     pub output: String,
     pub silent: bool,
@@ -49,7 +46,7 @@ const ENV_VAR_NO_COLOR: &str = "NO_COLOR";
 const ENV_VAR_TERM: &str = "TERM";
 
 impl Options {
-    fn from_args() -> Options {
+    pub fn from_args() -> Options {
         let app = App::new(env!("CARGO_PKG_NAME"))
             .version(env!("CARGO_PKG_VERSION"))
             .author(format!("\n{}\n\n", env!("CARGO_PKG_AUTHORS").replace(':', "\n")).as_str())
@@ -125,7 +122,7 @@ impl Options {
         options.no_js = app.is_present("no-js");
         options.insecure = app.is_present("insecure");
         options.no_metadata = app.is_present("no-metadata");
-        options.cookie_file = app.value_of("load-cookies").map(|s| s.to_string());
+        options.load_cookies = app.value_of("load-cookies").map(|s| s.to_string());
         options.output = app.value_of("output").unwrap_or("").to_string();
         options.silent = app.is_present("silent");
         options.timeout = app

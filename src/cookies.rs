@@ -1,6 +1,10 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    sync::OnceLock,
+    time::{SystemTime, UNIX_EPOCH},
+};
 use url::Url;
 
+pub static COOKIES: OnceLock<Vec<Cookie>> = OnceLock::new();
 #[derive(Debug)]
 pub struct Cookie {
     pub domain: String,

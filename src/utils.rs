@@ -1,13 +1,13 @@
-use once_cell::sync::Lazy;
 use reqwest::blocking::Client;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, COOKIE, USER_AGENT};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use url::Url;
 
+use crate::cookies::COOKIES;
 use crate::opts::{Options, OPTIONS};
 use crate::url::{clean_url, parse_data_url};
 
@@ -42,30 +42,8 @@ const PLAINTEXT_MEDIA_TYPES: &[&str] = &[
     "image/svg+xml",
 ];
 
-static CLIENT: Lazy<Client> = Lazy::new(|| {
-    let mut header_map = HeaderMap::new();
-    if let Some(user_agent) = &OPTIONS.user_agent {
-        header_map.insert(
-            USER_AGENT,
-            HeaderValue::from_str(user_agent).expect("Invalid User-Agent header specified"),
-        );
-    }
-
-    if OPTIONS.timeout > 0 {
-        Client::builder().timeout(Duration::from_secs(OPTIONS.timeout))
-    } else {
-        Client::builder()
-    }
-    .danger_accept_invalid_certs(OPTIONS.insecure)
-    .default_headers(header_map)
-    .build()
-    .expect("Failed to initialize HTTP client")
-});
-
-static CACHE: Lazy<Mutex<HashMap<String, Vec<u8>>>> = Lazy::new(|| {
-    let mut m = HashMap::new();
-    Mutex::new(m)
-});
+pub static CLIENT: OnceLock<Client> = OnceLock::new();
+pub static CACHE: OnceLock<Mutex<HashMap<String, Vec<u8>>>> = OnceLock::new();
 
 pub fn detect_media_type(data: &[u8], url: &Url) -> String {
     // At first attempt to read file's header
@@ -221,27 +199,50 @@ pub fn retrieve_asset(
     options: &Options,
     depth: u32,
 ) -> Result<(Vec<u8>, Url, String, String), reqwest::Error> {
+    let client = CLIENT.get_or_init(|| {
+        let mut header_map = HeaderMap::new();
+        let options = OPTIONS.get().expect("Options not initialized");
+        if let Some(ref user_agent) = options.user_agent {
+            header_map.insert(
+                USER_AGENT,
+                HeaderValue::from_str(user_agent).expect("Invalid User-Agent header specified"),
+            );
+        }
+
+        if options.timeout > 0 {
+            Client::builder().timeout(Duration::from_secs(options.timeout))
+        } else {
+            Client::builder()
+        }
+        .danger_accept_invalid_certs(options.insecure)
+        .default_headers(header_map)
+        .build()
+        .expect("Failed to initialize HTTP client")
+    });
+
+    let cache = CACHE.get_or_init(|| {
+        let m = HashMap::new();
+        Mutex::new(m)
+    });
+
     if url.scheme() == "data" {
         let (media_type, charset, data) = parse_data_url(url);
         Ok((data, url.clone(), media_type, charset))
     } else if url.scheme() == "file" {
         // Check if parent_url is also a file: URL (if not, then we don't embed the asset)
-        if parent_url.scheme() != "file" {
-            if !options.silent {
-                eprintln!(
-                    "{}{}{} (Security Error){}",
-                    indent(depth).as_str(),
-                    if options.no_color { "" } else { ANSI_COLOR_RED },
-                    &url,
-                    if options.no_color {
-                        ""
-                    } else {
-                        ANSI_COLOR_RESET
-                    },
-                );
-            }
-            // Provoke error
-            CLIENT.get("").send()?;
+        if parent_url.scheme() != "file" && !options.silent {
+            eprintln!(
+                "{}{}{} (Security Error){}",
+                indent(depth).as_str(),
+                if options.no_color { "" } else { ANSI_COLOR_RED },
+                &url,
+                if options.no_color {
+                    ""
+                } else {
+                    ANSI_COLOR_RESET
+                },
+            );
+            client.get("").send()?;
         }
 
         let path_buf: PathBuf = url.to_file_path().unwrap();
@@ -263,7 +264,7 @@ pub fn retrieve_asset(
                 }
 
                 // Provoke error
-                Err(CLIENT.get("").send().unwrap_err())
+                Err(client.get("").send().unwrap_err())
             } else {
                 if !options.silent {
                     eprintln!("{}{}", indent(depth).as_str(), &url);
@@ -290,19 +291,19 @@ pub fn retrieve_asset(
             }
 
             // Provoke error
-            Err(CLIENT.get("").send().unwrap_err())
+            Err(client.get("").send().unwrap_err())
         }
     } else {
         let cache_key: String = clean_url(url.clone()).as_str().to_string();
 
-        if CACHE.lock().unwrap().contains_key(&cache_key) {
+        if cache.lock().unwrap().contains_key(&cache_key) {
             // URL is in cache, we get and return it
             if !options.silent {
                 eprintln!("{}{} (from cache)", indent(depth).as_str(), &url);
             }
 
             Ok((
-                CACHE.lock().unwrap().get(&cache_key).unwrap().to_vec(),
+                cache.lock().unwrap().get(&cache_key).unwrap().to_vec(),
                 url.clone(),
                 "".to_string(),
                 "".to_string(),
@@ -315,19 +316,19 @@ pub fn retrieve_asset(
                 if (options.blacklist_domains && domain_matches)
                     || (!options.blacklist_domains && !domain_matches)
                 {
-                    return Err(CLIENT.get("").send().unwrap_err());
+                    return Err(client.get("").send().unwrap_err());
                 }
             }
 
             // URL not in cache, we retrieve the file
-            let mut request = CLIENT.get(url.as_str());
-            if options.cookie_file.is_some() {
-                if let Some(cookie) = options
-                    .__cookies
+            let mut request = client.get(url.as_str());
+            if let Some(cookies) = COOKIES.get() {
+                if let Some(matching_cookie) = cookies
                     .iter()
                     .find(|c| !c.is_expired() && c.matches_url(url.as_str()))
                 {
-                    request = request.header(COOKIE, cookie.encoded());
+                    println!("matching cookie: {:?}", matching_cookie.encoded());
+                    request = request.header(COOKIE, matching_cookie.encoded())
                 }
             }
 
@@ -349,7 +350,7 @@ pub fn retrieve_asset(
                             );
                         }
                         // Provoke error
-                        return Err(CLIENT.get("").send().unwrap_err());
+                        return Err(client.get("").send().unwrap_err());
                     }
 
                     let response_url: Url = response.url().clone();
@@ -397,7 +398,7 @@ pub fn retrieve_asset(
                     }
 
                     // Add retrieved resource to cache
-                    CACHE.lock().unwrap().insert(new_cache_key, data.clone());
+                    cache.lock().unwrap().insert(new_cache_key, data.clone());
 
                     // Return
                     Ok((data, response_url, media_type, charset))
@@ -418,7 +419,7 @@ pub fn retrieve_asset(
                         );
                     }
 
-                    Err(CLIENT.get("").send().unwrap_err())
+                    Err(client.get("").send().unwrap_err())
                 }
             }
         }
