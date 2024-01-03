@@ -243,6 +243,7 @@ pub fn retrieve_asset(
                     },
                 );
             }
+            // Provoke error
             client.get("").send()?;
         }
 
