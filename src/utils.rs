@@ -8,7 +8,7 @@ use std::time::Duration;
 use url::Url;
 
 use crate::cookies::COOKIES;
-use crate::opts::{Options, OPTIONS};
+use crate::opts::Options;
 use crate::url::{clean_url, parse_data_url};
 
 const ANSI_COLOR_RED: &str = "\x1b[31m";
@@ -229,18 +229,20 @@ pub fn retrieve_asset(
         Ok((data, url.clone(), media_type, charset))
     } else if url.scheme() == "file" {
         // Check if parent_url is also a file: URL (if not, then we don't embed the asset)
-        if parent_url.scheme() != "file" && !options.silent {
-            eprintln!(
-                "{}{}{} (Security Error){}",
-                indent(depth).as_str(),
-                if options.no_color { "" } else { ANSI_COLOR_RED },
-                &url,
-                if options.no_color {
-                    ""
-                } else {
-                    ANSI_COLOR_RESET
-                },
-            );
+        if parent_url.scheme() != "file" {
+            if !options.silent {
+                eprintln!(
+                    "{}{}{} (Security Error){}",
+                    indent(depth).as_str(),
+                    if options.no_color { "" } else { ANSI_COLOR_RED },
+                    &url,
+                    if options.no_color {
+                        ""
+                    } else {
+                        ANSI_COLOR_RESET
+                    },
+                );
+            }
             client.get("").send()?;
         }
 
@@ -322,12 +324,16 @@ pub fn retrieve_asset(
             // URL not in cache, we retrieve the file
             let mut request = client.get(url.as_str());
             if let Some(cookies) = COOKIES.get() {
-                if let Some(matching_cookie) = cookies
-                    .iter()
-                    .find(|c| !c.is_expired() && c.matches_url(url.as_str()))
-                {
-                    println!("matching cookie: {:?}", matching_cookie.encoded());
-                    request = request.header(COOKIE, matching_cookie.encoded());
+                let mut cookie_header: String = String::new();
+                for c in cookies {
+                    if !c.is_expired() && c.matches_url(url.as_str()) {
+                        cookie_header.push_str(&(c.encoded() + "; "))
+                    }
+                }
+
+                if !cookie_header.is_empty() {
+                    println!("matching cookies: {}", cookie_header);
+                    //request = request.header(COOKIE, cookie_header);
                 }
             }
 
